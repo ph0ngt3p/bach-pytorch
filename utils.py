@@ -122,6 +122,11 @@ def unparallelize_model(model):
     return model
 
 
+def cvt_to_gpu(X):
+    return Variable(X.cuda()) if torch.cuda.is_available() \
+        else Variable(X)
+
+
 def test_aug_train():
     dset = MyTrainDataset('data/train_val_data.hdf5', root_dir='./data', train=True)
     print(len(dset))

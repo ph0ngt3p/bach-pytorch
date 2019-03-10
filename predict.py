@@ -13,7 +13,10 @@ parser.add_argument('--batch_size', default=256, type=int, help='Batch size - de
 parser.add_argument('--depth', default=18, choices = [18, 50, 152], type=int, help='depth of model')
 args = parser.parse_args()
 
-RESULT_FILE = os.path.join(PROJECT_DIR, 'test_results')
+if not os.path.isdir('./results'):
+    os.mkdir('./results')
+
+RESULT_FILE = os.path.join(PROJECT_DIR, 'results', 'test_results')
 print(torch.cuda.is_available())
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
@@ -52,7 +55,7 @@ def predict(model, test_loader):
     f.write('correct,predicted\n')
 
     for idx, (images, labels) in enumerate(test_loader):
-        images, labels = images.to(device), labels.to(device)
+        images, labels = cvt_to_gpu(images), cvt_to_gpu(labels)
         outputs = model(images)
         _, predicted = outputs.max(1)
         test_correct += predicted.eq(labels).sum().item()

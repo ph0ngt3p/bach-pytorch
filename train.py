@@ -25,7 +25,7 @@ from constants import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--lr', default=1e-2, type=float, help='Learning Rate')
-parser.add_argument('--depth', default=18, choices=[18, 34, 50, 152, 161], type=int, help='depth of model')
+parser.add_argument('--depth', default=18, choices=[18, 34, 50, 101, 152, 161], type=int, help='depth of model')
 parser.add_argument('--optim', default='sgd', choices=['adam', 'sgd'], type=str,
                     help='Using Adam or SGD optimizer for model')
 parser.add_argument('--inspect', '-ins', action='store_true', help='Inspect saved model')
@@ -37,7 +37,7 @@ parser.add_argument('--train_from', default=1,
                     type=int,
                     help="training from beginning (1) or from the most recent ckpt (0)")
 parser.add_argument('--check_after', default=1, type=int, help='Validate the model after how many epoch - default : 1')
-parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+parser.add_argument('--log-interval', type=int, default=1, metavar='N',
                     help='how many batches to wait before logging training status')
 parser.add_argument('--frozen_until', '-fu', type=int, default=8,
                     help="freeze until --frozen_util block")
@@ -81,9 +81,9 @@ val_logger = Logger(os.path.join(LOG_DIR, 'val'))
 def exp_lr_schedule(args, optimizer, epoch):
     # after epoch 100, not more learning rate decay
     init_lr = args.lr
-    lr_decay_epoch = 50  # decay lr after each 10 epoch
+    lr_decay_epoch = 25  # decay lr after each 10 epoch
     weight_decay = args.weight_decay
-    lr = init_lr * (0.6 ** (min(epoch, 100) // lr_decay_epoch))
+    lr = init_lr * (0.6 ** (min(epoch, 200) // lr_decay_epoch))
 
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
@@ -126,7 +126,7 @@ def train_validate(epoch, optimizer, model, criterion, train_loader, validate_lo
 
     pbar = tqdm(enumerate(train_loader))
     for idx, (images, labels) in pbar:
-        images, labels = images.to(device), labels.to(device)
+        images, labels = cvt_to_gpu(images), cvt_to_gpu(labels)
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
@@ -175,7 +175,7 @@ def train_validate(epoch, optimizer, model, criterion, train_loader, validate_lo
         total = 0
         pbar = tqdm(enumerate(validate_loader))
         for idx, (images, labels) in pbar:
-            images, labels = images.to(device), labels.to(device)
+            images, labels = cvt_to_gpu(images), cvt_to_gpu(labels)
             optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels)
@@ -224,7 +224,7 @@ if args.train_from == 2:
     checkpoint = torch.load(old_model, map_location=lambda storage, loc: storage)
     tmp = checkpoint['model']
     model = unparallelize_model(tmp)
-    acc = checkpoint['acc']
+    loss = checkpoint['loss']
     print('Model loaded, previous loss was {:.6f} at epoch {}'.format(checkpoint['loss'], checkpoint['epoch']))
     print('=============================================')
 else:

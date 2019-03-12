@@ -13,22 +13,26 @@ import torchvision.transforms as transforms
 import tables
 import numpy as np
 from augmentations import rand_similarity_trans
+from sklearn.model_selection import train_test_split
 
 import cv2
 import matplotlib.pyplot as plt
 
 
 class MyTrainDataset(Dataset):
-    def __init__(self, hdf5_file, root_dir, train, aug_multiplier=5, transform=None):
-        if os.path.isfile(hdf5_file):
-            self.hdf5_file = tables.open_file(hdf5_file, mode='r')
+    def __init__(self, file, root_dir, train=True, transform=None):
+        if os.path.isfile(file):
+            self.train_file = np.load(file)
             self.train = train
-            if train:
-                self.X_train = self.hdf5_file.root.X_train
-                self.Y_train = self.hdf5_file.root.Y_train
+            self.X = self.train_file['X_train']
+            self.y = self.train_file['y_train']
+            X_t, X_v, y_t, y_v = train_test_split(self.X, self.y, test_size=0.08, random_state=42, stratify=self.y)
+            if self.train:
+                self.X_train = X_t
+                self.y_train = y_t
             else:
-                self.X_val = self.hdf5_file.root.X_val
-                self.Y_val = self.hdf5_file.root.Y_val
+                self.X_val = X_v
+                self.y_val = y_v
             self.root_dir = root_dir
             self.transform = transform
         else:
@@ -44,10 +48,10 @@ class MyTrainDataset(Dataset):
     def __getitem__(self, idx):
         if self.train:
             image = self.X_train[idx]
-            label = self.Y_train[idx]
+            label = self.y_train[idx]
         else:
             image = self.X_val[idx]
-            label = self.Y_val[idx]
+            label = self.y_val[idx]
 
         if self.transform:
             image = self.transform(image)
@@ -56,11 +60,11 @@ class MyTrainDataset(Dataset):
 
 
 class MyTestDataset(Dataset):
-    def __init__(self, hdf5_file, root_dir, transform=None):
-        if os.path.isfile(hdf5_file):
-            self.hdf5_file = tables.open_file(hdf5_file, mode='r')
-            self.X_test = self.hdf5_file.root.X_test
-            self.Y_test = self.hdf5_file.root.Y_test
+    def __init__(self, file, root_dir, transform=None):
+        if os.path.isfile(file):
+            self.test_file = np.load(file)
+            self.X_test = self.test_file['X_test']
+            self.y_test = self.test_file['y_test']
             self.root_dir = root_dir
             self.transform = transform
         else:
@@ -72,7 +76,7 @@ class MyTestDataset(Dataset):
 
     def __getitem__(self, idx):
         image = self.X_test[idx]
-        image_id = self.Y_test[idx]
+        image_id = self.y_test[idx]
 
         if self.transform:
             image = self.transform(image)
@@ -128,16 +132,21 @@ def cvt_to_gpu(X):
 
 
 def test_aug_train():
-    dset = MyTrainDataset('data/train_val_data.hdf5', root_dir='./data', train=True)
-    print(len(dset))
-    print(len(dset.Y_train))
-    print(dset.Y_train)
+    dset = MyTrainDataset('data/train_val.npz', root_dir='./data')
+    dset2 = MyTrainDataset('data/train_val.npz', train=False, root_dir='./data')
 
-    img = dset.X_train[-555, :, :, 0]
-    print(dset.Y_train[-555])
-    plt.subplot(1, 2, 2)
-    plt.imshow(img, cmap='gray')
-    plt.show()
+    print(len(dset))
+    print(len(dset.y_train))
+    print(dset.y_train)
+
+    import collections
+    print(collections.Counter(dset.y_train))
+    print(collections.Counter(dset2.y_val))
+
+    img = dset.X_train[100, :, :, :]
+    cv2.imshow('img', img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
 # test_aug_train()

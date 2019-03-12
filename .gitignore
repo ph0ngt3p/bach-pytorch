@@ -114,5 +114,5 @@ out
 gen
 data/
 *.csv
-logs/
-checkpoint/
+logs*/
+checkpoint*/

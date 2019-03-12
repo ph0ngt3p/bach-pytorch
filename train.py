@@ -202,8 +202,8 @@ def train_validate(epoch, optimizer, model, criterion, train_loader, validate_lo
 
 
 dsets = dict()
-dsets['train'] = MyTrainDataset(HDF5_TRAIN_PATH, root_dir='./data', train=True, transform=data_transforms['train'])
-dsets['val'] = MyTrainDataset(HDF5_TRAIN_PATH, root_dir='./data', train=False, transform=data_transforms['val'])
+dsets['train'] = MyTrainDataset(NPY_TRAIN_PATH, root_dir='./data', transform=data_transforms['train'])
+dsets['val'] = MyTrainDataset(NPY_TRAIN_PATH, root_dir='./data', train=False, transform=data_transforms['val'])
 
 dset_loaders = {
     x: torch.utils.data.DataLoader(dsets[x],

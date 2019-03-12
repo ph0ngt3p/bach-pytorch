@@ -75,7 +75,7 @@ def predict(model, test_loader):
 
 if __name__ == '__main__':
     model = MyResNet(depth=args.depth, num_classes=4)
-    test_set = MyTestDataset(HDF5_TEST_PATH, root_dir='./data', transform=data_transforms['val'])
+    test_set = MyTestDataset(NPY_TEST_PATH, root_dir='./data', transform=data_transforms['val'])
     test_loader = utilsData.DataLoader(dataset=test_set, batch_size=args.batch_size, sampler=None, shuffle=False,
                                        batch_sampler=None)
     assert os.path.isdir('./checkpoint'), 'Error: model is not availabel!'

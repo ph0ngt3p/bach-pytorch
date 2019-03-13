@@ -25,6 +25,10 @@ from constants import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--lr', default=1e-2, type=float, help='Learning Rate')
+parser.add_argument('--lr_decay_epoch', '-lde', type=int, default=25, metavar='N',
+                    help='how many batches to wait before logging training status')
+parser.add_argument('--stop_scheduler', type=int, default=200, metavar='N',
+                    help='how many batches to wait before logging training status')
 parser.add_argument('--depth', default=18, choices=[18, 34, 50, 101, 152, 161], type=int, help='depth of model')
 parser.add_argument('--optim', default='sgd', choices=['adam', 'sgd'], type=str,
                     help='Using Adam or SGD optimizer for model')
@@ -56,12 +60,13 @@ save_loss = 0
 print('DataLoader ....')
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
-# input_size = 224
-input_size = 224
 
 data_transforms = {
     'train': transforms.Compose([
         transforms.ToPILImage(),
+        # transforms.RandomResizedCrop(size=INPUT_SIZE, scale=(0.9, 1.1)),
+        # transforms.RandomAffine(degrees=15, translate=(0.02, 0.02), scale=(0.9, 1.1)),
+        transforms.ColorJitter(),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(mean, std)
@@ -81,9 +86,9 @@ val_logger = Logger(os.path.join(LOG_DIR, 'val'))
 def exp_lr_schedule(args, optimizer, epoch):
     # after epoch 100, not more learning rate decay
     init_lr = args.lr
-    lr_decay_epoch = 25  # decay lr after each 10 epoch
+    lr_decay_epoch = args.lr_decay_epoch  # decay lr after each 10 epoch
     weight_decay = args.weight_decay
-    lr = init_lr * (0.6 ** (min(epoch, 200) // lr_decay_epoch))
+    lr = init_lr * (0.6 ** (min(epoch, args.stop_scheduler) // lr_decay_epoch))
 
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
@@ -225,18 +230,28 @@ if args.train_from == 2:
     tmp = checkpoint['model']
     model = unparallelize_model(tmp)
     loss = checkpoint['loss']
+    start_epoch = checkpoint['epoch']
     print('Model loaded, previous loss was {:.6f} at epoch {}'.format(checkpoint['loss'], checkpoint['epoch']))
     print('=============================================')
 else:
     model = MyResNet(depth=args.depth, num_classes=4)
+    # model = MyInceptionResNetv2(num_classes=4)
 
 #############
 print('Start training ... ')
 model, optimizer = net_frozen(args, model)
+
+total_params = sum(p.numel() for p in model.parameters())
+print(f'{total_params:,} total parameters.')
+total_trainable_params = sum(
+    p.numel() for p in model.parameters() if p.requires_grad)
+print(f'{total_trainable_params:,} trainable parameters.')
+
 model = parallelize_model(model)
 # model = params_initializer(model)
 criterion = nn.CrossEntropyLoss()
-for epoch in range(start_epoch + args.interval):
+
+for epoch in range(start_epoch, start_epoch + args.interval):
     train_validate(epoch, optimizer, model, criterion, dset_loaders['train'], dset_loaders['val'])
 
 # if args.inspect:

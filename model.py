@@ -7,6 +7,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.models as models
+from pretrainedmodels import inceptionresnetv2
 
 
 class MyDenseNet(nn.Module):
@@ -119,10 +120,47 @@ class MyResNet(nn.Module):
             child_counter += 1
 
 
-# def test():
-#     net = Net2(num_classes=43)
-#     y = net(torch.randn(1, 1, 32, 32))
-#     print(y.size())
+class MyInceptionResNetv2(nn.Module):
+    def __init__(self, num_classes, pretrained=True):
+        super(MyInceptionResNetv2, self).__init__()
+        model = inceptionresnetv2()
+
+        self.num_ftrs = model.last_linear.in_features
+        # self.num_classes = num_classes
+
+        self.shared = nn.Sequential(*list(model.children())[:-1])
+        self.target = nn.Sequential(nn.Linear(self.num_ftrs, num_classes))
+
+    def forward(self, x):
+        # pdb.set_trace()
+
+        x = self.shared(x)
+        x = torch.squeeze(x)
+        return self.target(x)
+
+    def frozen_until(self, to_layer):
+        print('Frozen shared part until %d-th layer, inclusive'%to_layer)
+
+        # if to_layer = -1, frozen all
+        child_counter = 0
+        for child in self.shared.children():
+            if child_counter <= to_layer:
+                print("child ", child_counter, " was frozen")
+                for param in child.parameters():
+                    param.requires_grad = False
+                # frozen deeper children? check
+                # https://spandan-madan.github.io/A-Collection-of-important-tasks-in-pytorch/
+            else:
+                print("child ", child_counter, " was not frozen")
+                for param in child.parameters():
+                    param.requires_grad = True
+            child_counter += 1
+
+
+def test():
+    net = MyResNet(depth=50, num_classes=4)
+    y = net(torch.randn(1, 3, 224, 224))
+    print(y.size())
 
 
 # test()

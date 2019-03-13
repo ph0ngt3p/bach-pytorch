@@ -36,7 +36,7 @@ for label in [name for name in os.listdir(TRAINVAL_DATA_PATH) if os.path.isdir(o
 # shuffle(train_val_set)
 X, y = zip(*train_val_set)
 
-X_np = np.zeros((len(X), 224, 224, 3), dtype=np.uint8)
+X_np = np.zeros((len(X), INPUT_SIZE, INPUT_SIZE, 3), dtype=np.uint8)
 
 # loop over addresses
 for i in range(len(X)):
@@ -48,7 +48,7 @@ for i in range(len(X)):
     addr = X[i]
     img = cv2.imread(addr)
     # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    img = cv2.resize(img, (224, 224), interpolation=cv2.INTER_AREA)
+    img = cv2.resize(img, (INPUT_SIZE, INPUT_SIZE), interpolation=cv2.INTER_AREA)
     # save the image
     X_np[i, :, :, :] = img
 

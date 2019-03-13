@@ -131,11 +131,19 @@ def cvt_to_gpu(X):
         else Variable(X)
 
 
+def show_dataset(dataset, n=6):
+    img = np.vstack((np.hstack((np.asarray(dataset[i][0]) for _ in range(n)))
+                    for i in range(len(dataset))))
+    plt.imshow(img)
+    plt.axis('off')
+
+
 def test_aug_train():
     dset = MyTrainDataset('data/train_val.npz', root_dir='./data')
     dset2 = MyTrainDataset('data/train_val.npz', train=False, root_dir='./data')
 
     print(len(dset))
+    print(dset.X_train.shape)
     print(len(dset.y_train))
     print(dset.y_train)
 
@@ -143,7 +151,7 @@ def test_aug_train():
     print(collections.Counter(dset.y_train))
     print(collections.Counter(dset2.y_val))
 
-    img = dset.X_train[100, :, :, :]
+    img = dset.X_train[1, :, :, :]
     cv2.imshow('img', img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

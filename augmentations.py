@@ -8,6 +8,7 @@ from skimage import img_as_ubyte
 import imgaug as ia
 from imgaug import augmenters as iaa
 import numpy as np
+from constants import *
 
 ia.seed(1)
 
@@ -50,7 +51,7 @@ def rand_similarity_trans(image, n):
     apply random similarity transformation to the image, and return
     n transformed images
     """
-    output_images = np.uint8(np.zeros((n, 224, 224, 3)))
+    output_images = np.uint8(np.zeros((n, INPUT_SIZE, INPUT_SIZE, 3)))
 
     for i in range(n):
         angle = random.uniform(-15, 15)  # rotation
@@ -79,10 +80,9 @@ def rand_similarity_trans(image, n):
 
     return output_images
 
-
 # def test():
 #     img = cv2.imread('/home/tep/PycharmProjects/bach-pytorch/data/Benign/b001.tif')
-#     img = cv2.resize(img, (224, 224), interpolation=cv2.INTER_AREA)
+#     img = cv2.resize(img, (INPUT_SIZE, INPUT_SIZE), interpolation=cv2.INTER_AREA)
 #     cv2.imshow('img', img)
 #     cv2.waitKey(0)
 #     cv2.destroyAllWindows()
